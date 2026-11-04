@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Football Predictor | Daily ML Match Forecasts</title>
-    <meta name="description" content="Daily football match predictions powered by Random Forest and XGBoost machine learning models.">
+    <title>Pronósticos de fútbol | Partidos y predicciones</title>
+    <meta name="description" content="Pronósticos de partidos de fútbol consultados a API-Football.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
@@ -20,59 +20,64 @@
                 <span class="gradient-text">Predict</span>ML
             </div>
             <nav>
-                <a href="#today" class="nav-link active">Today's Matches</a>
-                <a href="#history" class="nav-link">Track Record</a>
+                <a href="#today" class="nav-link active">Partidos de hoy</a>
             </nav>
         </div>
     </header>
 
     <main class="container">
         <section id="hero" class="hero-section text-center">
-            <img src="assets/logo.png" alt="AI Football Logo" class="main-logo">
-            <h1 class="hero-title">AI-Powered Football <br><span class="gradient-text">Predictions</span></h1>
-            <p class="hero-subtitle">Utilizing the advanced API-Football Machine Learning Engine to predict daily match outcomes with high accuracy.</p>
+            <img src="assets/logo.png" alt="Logotipo de pronósticos de fútbol" class="main-logo">
+            <h1 class="hero-title">Pronósticos de fútbol <br><span class="gradient-text">para los partidos de hoy</span></h1>
+            <p class="hero-subtitle">Pronósticos y estado de los partidos consultados a API-Football al iniciar el actualizador local.</p>
         </section>
 
         <!-- BET OF THE DAY VIP SECTION -->
         <section id="bet-of-the-day" class="botd-section" style="display: none;">
             <div class="section-header" style="justify-content: center; margin-bottom: 1rem;">
                 <h2 class="section-title gradient-text" style="margin:0; font-size: 2.5rem; display: flex; align-items: center; gap: 10px;">
-                    🌟 Bet of the Day 🌟
+                    🌟 Pronóstico destacado 🌟
                 </h2>
             </div>
-            <p class="text-center" style="color: var(--text-secondary); margin-bottom: 2rem;">Top Value Bet hand-picked by the AI</p>
+            <p class="text-center" style="color: var(--text-secondary); margin-bottom: 2rem;">Partido destacado según los datos disponibles</p>
             <div id="botd-container" style="max-width: 600px; margin: 0 auto 5rem auto;">
                 <!-- Injected via JS -->
             </div>
         </section>
 
-        <section id="history" class="stats-section">
-            <h2 class="section-title">Model Accuracy Track Record</h2>
-            <div class="stats-grid" id="stats-container">
-                <!-- Injected via JS -->
-                <div class="stat-card glass-card skeleton"></div>
-                <div class="stat-card glass-card skeleton"></div>
-                <div class="stat-card glass-card skeleton"></div>
-            </div>
-        </section>
-
-        <section id="livescores" class="container" style="margin-top: 4rem; margin-bottom: 4rem;">
-            <div class="section-header">
-                <h2 class="section-title">🔴 Live Scores</h2>
-            </div>
-            <div style="background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
-                <api-sports-widget data-type="livescore"></api-sports-widget>
-            </div>
-        </section>
-
         <section id="today" class="predictions-section">
             <div class="section-header" style="flex-wrap: wrap; gap: 1rem;">
-                <h2 class="section-title" style="margin: 0;">Today's Matches</h2>
+                <h2 class="section-title" style="margin: 0;">Partidos de hoy</h2>
                 <div class="view-toggle">
-                    <button id="toggle-grid" class="view-btn active" title="Grid View">🔲 Grid</button>
-                    <button id="toggle-table" class="view-btn" title="Table View">📋 Table</button>
+                    <button id="toggle-grid" class="view-btn active" title="Vista de tarjetas">🔲 Tarjetas</button>
+                    <button id="toggle-table" class="view-btn" title="Vista de tabla">📋 Tabla</button>
                 </div>
-                <div class="date-badge" id="current-date">Loading...</div>
+                <div class="date-badge" id="current-date">Cargando...</div>
+            </div>
+            <div class="match-filters" aria-label="Filtros de partidos">
+                <div class="filter-groups">
+                    <fieldset class="filter-group">
+                        <legend>Estado del partido</legend>
+                        <div class="filter-options">
+                            <label class="filter-option"><input type="radio" name="match-status" value="all" checked><span>Todos</span></label>
+                            <label class="filter-option"><input type="radio" name="match-status" value="live"><span><i class="live-dot" aria-hidden="true"></i>En juego</span></label>
+                            <label class="filter-option"><input type="radio" name="match-status" value="pending"><span>Por comenzar</span></label>
+                            <label class="filter-option"><input type="radio" name="match-status" value="finished"><span>Finalizados</span></label>
+                        </div>
+                    </fieldset>
+                    <fieldset class="filter-group">
+                        <legend>Competición</legend>
+                        <div class="filter-options">
+                            <label class="filter-option"><input type="radio" name="match-league" value="all" checked><span>Todas</span></label>
+                            <label class="filter-option"><input type="radio" name="match-league" value="uefa champions league"><span>Champions League</span></label>
+                            <label class="filter-option"><input type="radio" name="match-league" value="uefa europa league"><span>Europa League</span></label>
+                        </div>
+                    </fieldset>
+                </div>
+                <div class="filter-footer">
+                    <p id="filter-results" role="status" aria-live="polite" aria-atomic="true">Cargando partidos…</p>
+                    <button type="button" id="reset-filters" class="filter-reset" disabled>Restablecer filtros</button>
+                </div>
             </div>
             <div class="predictions-grid grid-view" id="predictions-container">
                 <!-- Injected via JS -->
@@ -82,32 +87,30 @@
         </section>
 
         <section id="about" class="about-section" style="margin-top: 4rem; padding: 2rem; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; text-align: center;">
-            <h2 class="section-title">🤖 About the AI</h2>
+            <h2 class="section-title">🤖 Acerca de los pronósticos</h2>
             <p style="color: var(--text-secondary); max-width: 800px; margin: 0 auto; line-height: 1.6;">
-                Welcome to the future of sports analytics. This platform runs completely autonomously, leveraging the advanced Machine Learning engine of <strong>API-Football</strong>. 
-                Every morning, the AI scans global fixtures, calculates precise probabilities for Match Winners (1X2) and Goals (Over/Under), and compares them against live bookmaker odds to detect hidden <strong>Value Bets 🌟</strong>. 
-                Every night, it grades its own performance to ensure maximum transparency. No human intervention, just pure data-driven edges.
+                Esta página muestra los pronósticos y datos disponibles en <strong>API-Football</strong> para los partidos de hoy. La aplicación consulta la API al iniciarse; no actualiza los pronósticos de forma continua durante el encuentro.
             </p>
         </section>
 
     </main>
 
     <footer>
-        <p>Predictions are based on statistical models and historical data. Not financial advice.</p>
+        <p>Los pronósticos son orientativos y no garantizan resultados ni ganancias. Apuesta con responsabilidad.</p>
     </footer>
 
     <!-- API Sports Widget Configuration -->
     <api-sports-widget data-type="config"
-      data-key="38f1c8e59dd3c061104a4ffd98f0fe1e"
+      data-key=""
       data-sport="football"
-      data-lang="en"
+      data-lang="es"
       data-theme="dark"
       data-show-errors="true"
     ></api-sports-widget>
     
     <!-- API Sports Leagues Widget -->
     <div class="container" style="margin-bottom: 4rem;">
-        <h2 class="section-title text-center">Supported Leagues</h2>
+        <h2 class="section-title text-center">Ligas disponibles</h2>
         <api-sports-widget data-type="leagues"></api-sports-widget>
     </div>
 
@@ -118,6 +121,7 @@
     <button id="music-toggle" class="music-btn glass-card">🔇</button>
 
     <script type="module" src="https://widgets.api-sports.io/2.0.0/widgets.js"></script>
+    <script src="data/offline-predictions.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

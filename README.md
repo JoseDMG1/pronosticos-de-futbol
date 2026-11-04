@@ -25,52 +25,6 @@
 
 ---
 
-## 🌟 About The Project
-
-This repository hosts a state-of-the-art, **serverless** football betting predictions platform. By leveraging the internal Machine Learning engine of **API-Football**, it calculates highly accurate probabilities, detects betting odds discrepancies, and presents the most profitable daily plays in a beautiful, neon-glassmorphism user interface.
-
-No database, no backend servers. Everything runs entirely on **GitHub Actions** and **GitHub Pages**.
-
-### ✨ Key Features
-
-- **🧠 Advanced AI Engine:** Fetches Match Winner (1X2), Over/Under, and Both Teams to Score (GG/NG) probabilities using mature Machine Learning algorithms.
-- **💎 VIP Bet of the Day:** An intelligent scanning system that evaluates all daily fixtures and promotes the single highest Expected Value (EV) bet to the top of the dashboard.
-- **📈 Live Value Bet Detection:** Automatically pulls pre-match odds from top bookmakers (e.g., Bet365) and flags mathematical edge opportunities (where `Probability * Odds > 1.0`).
-- **🔲 Dual Viewing Modes:** Instantly toggle between a visually stunning "Grid View" (VIP cards) and a dense, Zulubet-style "Table View" for rapid scanning of dozens of matches.
-- **🎯 Instant Short Tips:** Extrapolates complex AI advice into instantly readable badges (e.g., `1`, `X2`, `12`) for quick decision-making.
-- **🎵 Ambient Experience:** Integrated background music player with auto-play logic and UI toggles, providing a premium feel.
-- **🔴 Live Scores Integration:** Built-in live score widget using API-Sports web components for real-time tracking.
-- **🤖 100% CI/CD Automation:**
-  - **🌅 Morning Cron (06:00 UTC):** Wakes up, queries the API, calculates stats, writes to `predictions.json`, and deploys the new frontend automatically.
-  - **🌃 Evening Cron (23:00 UTC):** Audits the day's matches, grabs final scores, grades the AI's performance, and logs accuracy to `history.json`.
-
----
-
-## 🏗️ System Architecture
-
-This project is an elegant showcase of **Data-Driven Static Site Generation (SSG)** via CI/CD.
-
-```mermaid
-graph TD;
-    A[API-Football API] -->|Morning Cron: Fetch Fixtures & Odds| B(fetch_predictions.py);
-    B -->|Writes Data| C(data/predictions.json);
-    
-    A -->|Evening Cron: Fetch Results| D(fetch_results.py);
-    D -->|Evaluates Accuracy| E(data/history.json);
-    
-    C -->|Static Fetch| F[Frontend Dashboard JS];
-    E -->|Static Fetch| F;
-    
-    F -->|Renders UI| G((Live GitHub Pages Site));
-    
-    style A fill:#ff9800,stroke:#e65100,stroke-width:2px,color:#fff
-    style B fill:#2196f3,stroke:#0d47a1,stroke-width:2px,color:#fff
-    style D fill:#2196f3,stroke:#0d47a1,stroke-width:2px,color:#fff
-    style G fill:#4caf50,stroke:#1b5e20,stroke-width:2px,color:#fff
-```
-
----
-
 ## 🚀 Getting Started Locally
 
 To get a local copy up and running, follow these simple steps.
@@ -97,27 +51,14 @@ To get a local copy up and running, follow these simple steps.
    # On Mac/Linux
    export API_FOOTBALL_KEY="ENTER_YOUR_API_KEY_HERE"
    ```
-4. Run the data fetcher to generate fresh predictions:
+4. Start the local dashboard. This runs one API refresh and then serves the page. Each restart runs one more refresh while daily API quota remains:
    ```sh
-   python scripts/fetch_predictions.py
+   .\start-local.ps1
    ```
-5. Open `index.html` in any modern web browser to view the dashboard!
-
----
-
-## 🎨 UI/UX Design
-
-The dashboard is built from scratch using pure HTML, CSS, and Vanilla JavaScript, ensuring zero bloat and lightning-fast loading speeds.
-- **Glassmorphism:** Semi-transparent cards with frosted glass effects.
-- **Responsive Layout:** CSS Grid & Flexbox utilized for a seamless mobile and desktop experience.
-- **Dynamic Progress Bars:** Color-coded visualization of the AI's confidence levels.
+5. Open `http://127.0.0.1:8000` in your browser. Use the status filter to show all matches, only live matches, or only matches that have not started. Stop the server with `Ctrl+C`.
 
 ---
 
 ## 📝 License
 
-Distributed under the MIT License. This is a personal project created for educational, portfolio, and demonstration purposes. Not intended as financial advice.
-
-<div align="center">
-  <p>Built with ❤️ and 🤖</p>
-</div>
+Distributed under the MIT License. This is a project created by karidasd with repository name "football-predictions". Not intended as financial advice.

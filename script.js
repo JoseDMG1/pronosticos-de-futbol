@@ -1,8 +1,30 @@
+let currentPredictions = null;
+
 document.addEventListener("DOMContentLoaded", () => {
     fetchData('today');
+    window.setInterval(() => fetchData('today'), 60_000);
     setupMusicPlayer();
     setupTabsAndView();
+    setupStatusFilter();
 });
+
+function setupStatusFilter() {
+    const updateFilters = () => {
+        document.getElementById('reset-filters').disabled =
+            document.querySelector('input[name="match-status"]:checked').value === 'all' &&
+            document.querySelector('input[name="match-league"]:checked').value === 'all';
+        if (currentPredictions) renderPredictions(currentPredictions);
+    };
+    document.querySelectorAll('.match-filters input').forEach(input => {
+        input.addEventListener('change', updateFilters);
+    });
+    document.getElementById('reset-filters').addEventListener('click', () => {
+        document.querySelector('input[name="match-status"][value="all"]').checked = true;
+        document.querySelector('input[name="match-league"][value="all"]').checked = true;
+        document.querySelector('input[name="match-status"][value="all"]').focus();
+        updateFilters();
+    });
+}
 
 function setupTabsAndView() {
     const gridBtn = document.getElementById('toggle-grid');
@@ -72,21 +94,32 @@ async function fetchData(dayStr = 'today') {
         }
 
         if (predData && predData.matches) {
+            predData.matches = predData.matches.filter(match =>
+                match.status_short ? ['NS', '1H', 'HT', '2H', 'ET', 'BT', 'P', 'LIVE', 'INT', 'FT', 'AET', 'PEN'].includes(match.status_short) :
+                ['Pending', 'In Play', 'Finished'].includes(match.status)
+            );
+            currentPredictions = predData;
             document.getElementById('current-date').textContent = predData.date || dayStr;
             renderPredictions(predData);
         } else {
-            renderError('predictions-container', `Predictions for ${dayStr} are not available yet.`);
+            renderError('predictions-container', `Todavía no hay pronósticos disponibles para ${dayStr}.`);
             document.getElementById('botd-container').innerHTML = '';
             document.getElementById('bet-of-the-day').style.display = 'none';
         }
 
-        const histRes = await fetch(`data/history.json?t=${timestamp}`);
-        if (histRes.ok) {
-            const histData = await histRes.json();
-            renderHistory(histData);
-        }
     } catch (error) {
-        console.error("Error fetching data:", error);
+        if (window.OFFLINE_PREDICTIONS?.matches) {
+            currentPredictions = window.OFFLINE_PREDICTIONS;
+            currentPredictions.matches = currentPredictions.matches.filter(match =>
+                match.status_short ? ['NS', '1H', 'HT', '2H', 'ET', 'BT', 'P', 'LIVE', 'INT', 'FT', 'AET', 'PEN'].includes(match.status_short) :
+                ['Pending', 'In Play', 'Finished'].includes(match.status)
+            );
+            document.getElementById('current-date').textContent = currentPredictions.date || dayStr;
+            renderPredictions(currentPredictions);
+        } else {
+            console.error("Error loading saved predictions:", error);
+            renderError('predictions-container', 'No se pudieron cargar los pronósticos guardados.');
+        }
     }
 }
 
@@ -115,16 +148,45 @@ function renderPredictions(data) {
     const botdContainer = document.getElementById('botd-container');
     const botdSection = document.getElementById('bet-of-the-day');
     const dateBadge = document.getElementById('current-date');
+
+    const selectedStatus = document.querySelector('input[name="match-status"]:checked')?.value || 'all';
+    const selectedLeague = document.querySelector('input[name="match-league"]:checked')?.value || 'all';
+    const totalMatches = data.matches.length;
+    const liveStatuses = ['1H', 'HT', '2H', 'ET', 'BT', 'P', 'LIVE', 'INT'];
+    const finishedStatuses = ['FT', 'AET', 'PEN'];
+    data = {
+        ...data,
+        matches: data.matches.filter(match => {
+            const isLive = match.status_short ? liveStatuses.includes(match.status_short) : match.status === 'In Play';
+            const isFinished = match.status_short ? finishedStatuses.includes(match.status_short) : match.status === 'Finished';
+            const leagueMatches = selectedLeague === 'all' || String(match.league).trim().toLowerCase() === selectedLeague;
+            const statusMatches = selectedStatus === 'all' ||
+                (selectedStatus === 'live' && isLive) ||
+                (selectedStatus === 'finished' && isFinished) ||
+                (selectedStatus === 'pending' && !isLive && !isFinished);
+            return leagueMatches && statusMatches;
+        })
+    };
     
     container.innerHTML = '';
     botdContainer.innerHTML = '';
+    botdSection.style.display = 'none';
+    document.getElementById('filter-results').textContent = `${data.matches.length} de ${totalMatches} partidos coinciden con tus filtros`;
     
     if (data.date) {
-        dateBadge.textContent = new Date(data.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        const [year, month, day] = data.date.split('-').map(Number);
+        const localDate = new Date(year, month - 1, day);
+        dateBadge.textContent = localDate.toLocaleDateString('es-PE', {
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+        });
     }
 
     if (!data.matches || data.matches.length === 0) {
-        container.innerHTML = '<p style="grid-column: 1/-1; text-align:center; color: var(--text-secondary);">No fixtures scheduled for this day.</p>';
+        const message = totalMatches ? 'No hay partidos con esta combinación. Prueba otra opción o restablece los filtros.' : 'Todavía no hay partidos disponibles para hoy.';
+        const empty = document.createElement('p');
+        empty.className = 'filter-empty';
+        empty.textContent = message;
+        container.appendChild(empty);
         return;
     }
 
@@ -162,18 +224,24 @@ function renderPredictions(data) {
 }
 
 function createMatchCard(match, isVIP) {
-    const isFinished = match.status === 'Finished';
-    const statusClass = isFinished ? 'finished' : 'pending';
+    const isFinished = match.status_short ? ['FT', 'AET', 'PEN'].includes(match.status_short) : match.status === 'Finished';
+    const statusClass = match.status === 'In Play' ? 'live' : 'pending';
     
     let actualResultsHtml = '';
     if (isFinished) {
         let resultIcon = '';
-        if (match.correct_1x2 !== undefined) {
-            resultIcon = match.correct_1x2 ? '<span style="color: #4CAF50; margin-left: 5px;">✅ Won</span>' : '<span style="color: #f44336; margin-left: 5px;">❌ Lost</span>';
+        if (match.prediction_available !== false && ['1', 'X', '2', '1X', 'X2', '12'].includes(match.short_tip)
+            && Number.isFinite(match.home_goals) && Number.isFinite(match.away_goals)
+            && match.status_short === 'FT') {
+            const result = match.home_goals > match.away_goals ? '1' : match.home_goals < match.away_goals ? '2' : 'X';
+            const matched = match.short_tip.includes(result);
+            resultIcon = `<p>Pronóstico guardado: <strong>${match.short_tip}</strong> · Resultado: <strong>${result}</strong><br>${matched ? '✓ Coincide con el resultado' : '✕ No coincide con el resultado'}</p>`;
+        } else if (match.short_tip && ['AET', 'PEN'].includes(match.status_short)) {
+            resultIcon = '<p>Comparación automática no disponible: partido con prórroga o penaltis.</p>';
         }
         actualResultsHtml = `
             <div style="margin-top: 1rem; text-align: center; font-size: 0.9rem; color: var(--text-secondary);">
-                Score: <span style="color:var(--text-primary); font-weight: bold;">${match.home_goals} - ${match.away_goals}</span> ${resultIcon}
+                Marcador final: <span style="color:var(--text-primary); font-weight: bold;">${match.home_goals ?? '—'} - ${match.away_goals ?? '—'}</span> ${resultIcon}
             </div>
         `;
     }
@@ -206,12 +274,12 @@ function createMatchCard(match, isVIP) {
         `;
     }
 
-    const probHtml = `
+    const probHtml = match.prediction_available === false ? '<p>Probabilidades no disponibles.</p>' : `
         <div class="prob-container" style="margin-top: 1.5rem; font-size: 0.85rem;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
-                <span style="color:var(--text-secondary)">Home (${match.percent_home})</span>
-                <span style="color:var(--text-secondary)">Draw (${match.percent_draw})</span>
-                <span style="color:var(--text-secondary)">Away (${match.percent_away})</span>
+                <span style="color:var(--text-secondary)">Local (${match.percent_home})</span>
+                <span style="color:var(--text-secondary)">Empate (${match.percent_draw})</span>
+                <span style="color:var(--text-secondary)">Visitante (${match.percent_away})</span>
             </div>
             <div style="display: flex; height: 6px; border-radius: 3px; overflow: hidden; background: rgba(255,255,255,0.1);">
                 <div style="width: ${match.percent_home}; background: var(--accent-1);"></div>
@@ -222,15 +290,15 @@ function createMatchCard(match, isVIP) {
     `;
     
     // Short tip logic
-    const shortTip = match.short_tip || '1X2';
-    const tipBadge = `<div class="short-tip-wrapper"><div class="short-tip-badge">${shortTip}</div></div>`;
+    const shortTip = match.short_tip || (isFinished ? 'Histórico no recuperado' : 'Sin pronóstico');
+    const tipBadge = isFinished ? '' : `<div class="short-tip-wrapper"><div class="short-tip-badge">${shortTip}</div></div>`;
 
     const card = document.createElement('div');
     card.className = `prediction-card glass-card ${isVIP ? 'vip-card' : ''}`;
     card.innerHTML = `
         ${tipBadge}
-        <div class="status-badge ${statusClass}">${match.status}</div>
-        <div class="match-header" style="flex-direction: column; text-align: center; font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 1px;">
+        <div class="status-badge ${isFinished ? 'finished' : statusClass}">${isFinished ? 'Finalizado' : match.status === 'In Play' ? 'En juego' : 'Pendiente'}</div>
+        <div class="match-header league-badge">
             ${match.league}
         </div>
         <div class="match-teams" style="display:flex; justify-content:space-between; align-items:center;">
@@ -247,12 +315,22 @@ function createMatchCard(match, isVIP) {
         ${probHtml}
         ${oddsHtml}
         <div class="ai-advice" style="margin-top: 1rem; padding: 0.75rem; background: rgba(255,255,255,0.05); border-radius: 8px; text-align: center;">
-            <strong style="color: var(--accent-2); font-size: 0.8rem; text-transform: uppercase;">AI Advice</strong><br>
-            <span style="font-size: 0.95rem; font-weight: 600;">${match.advice}</span>
+            <strong style="color: var(--accent-2); font-size: 0.8rem; text-transform: uppercase;">${isFinished ? 'Pronóstico original guardado' : 'Consejo de API-Football'}</strong><br>
+            <span style="font-size: 0.95rem; font-weight: 600;">${isFinished && !match.short_tip ? 'El pronóstico anterior no pudo recuperarse. No se generará otro después del resultado.' : translateAdvice(match.advice)}</span>
+            ${match.fetched_at ? `<p>Consultado: ${new Date(match.fetched_at).toLocaleString('es-PE', {timeZone: 'America/Lima'})} (Perú)</p>` : ''}
         </div>
         ${actualResultsHtml}
     `;
     return card;
+}
+
+function translateAdvice(advice = '') {
+    return String(advice)
+        .replace(/Double chance\s*:/gi, 'Doble oportunidad:')
+        .replace(/Win or draw/gi, 'Victoria o empate')
+        .replace(/Draw or win/gi, 'Empate o victoria')
+        .replace(/Over\s+(\d+(?:\.\d+)?)/gi, 'Más de $1')
+        .replace(/Under\s+(\d+(?:\.\d+)?)/gi, 'Menos de $1');
 }
 
 function renderHistory(data) {
