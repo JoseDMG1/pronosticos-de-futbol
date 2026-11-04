@@ -1,3 +1,7 @@
+## Créditos
+
+Adaptación del proyecto [football-predictions de karidasd](https://github.com/karidasd/football-predictions).
+
 # Pronósticos de fútbol
 
 Dashboard en español para consultar partidos y pronósticos de **UEFA Champions League** y **UEFA Europa League** mediante API-Football. Funciona localmente con Python, HTML, CSS y JavaScript.
@@ -65,7 +69,3 @@ Después de una actualización, abre **`index.html`** directamente en el navegad
 - `data/.api_usage.json` y `data/.api_attempted.json`: contadores y registro de consultas locales, excluidos de Git.
 
 Al arrancar en un nuevo día, se limpia la vista diaria anterior, conservando el archivo histórico. Un partido en juego muestra el pronóstico guardado; eso no implica que se recalcule con cada evento del encuentro.
-
-## Créditos
-
-Adaptación del proyecto [football-predictions de karidasd](https://github.com/karidasd/football-predictions).
